@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "libvirt-exporter.fullname" . }}
+  labels:
+{{- include "libvirt-exporter.labels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+{{- include "libvirt-exporter.labels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{- include "libvirt-exporter.labels" . | indent 8 }}
+    spec:
+      containers:
+      - name: prometheus-libvirt-exporter
+        securityContext:
+          runAsUser: 0
+          privileged: true
+          readOnlyRootFilesystem: false
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        volumeMounts:
+          - name: libvirt-sock
+            mountPath: /var/run/libvirt/libvirt-sock
+        ports:
+        - name: metrics
+          containerPort: {{ .Values.libvirtExporterPort }}
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /metrics
+            port: metrics
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 3
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /metrics
+            port: 9177
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 3
+      volumes:
+      - name: libvirt-sock
+        hostPath:
+          path: /var/run/libvirt/libvirt-sock
+          type: Socket
+{{- if .Values.nodeSelector }}
+      nodeSelector:
+      {{ toYaml .Values.nodeSelector | indent 6 }}
+{{- end }}

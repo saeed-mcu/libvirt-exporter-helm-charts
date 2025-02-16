@@ -1,0 +1,14 @@
+---
+image:
+  repository: ghcr.io/inovex/prometheus-libvirt-exporter
+  tag: 1.6.0-amd64
+  pullPolicy: Always
+
+nodeSelector:
+  openstack-compute-node: enabled
+
+libvirtExporterPort: 9177
+
+serviceMonitor:
+  interval: 1m
+  scrapeTimeout: 30s
